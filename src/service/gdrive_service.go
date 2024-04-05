@@ -1,19 +1,19 @@
-package main
+package gdrive_service
 
 import (
-    "context"
-    "encoding/json"
-    "fmt"
-    "io/ioutil"
-    "log"
-    "net/http"
-    "os"
-    "ggdrive/utils"
+	"context"
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"log"
+	"net/http"
+	"os"
 
-    "golang.org/x/oauth2"
-    "golang.org/x/oauth2/google"
-    "google.golang.org/api/drive/v3"
-    "google.golang.org/api/option"
+	"github.com/DiscordTime/ggdrive/src/utils"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
+	"google.golang.org/api/drive/v3"
+	"google.golang.org/api/option"
 )
 
 type GSvc interface {
@@ -28,7 +28,7 @@ type GdriveService struct {
     srv *drive.Service
 }
 
-func NewGdriveService(ctx context.Context, logger utils.Logger) *GdriveService {
+func New(ctx context.Context, logger utils.Logger) *GdriveService {
     // Not ideal, but it's fine for now
     srv, err := authenticate(ctx)
     if (err != nil) {

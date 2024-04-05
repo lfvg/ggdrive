@@ -3,29 +3,30 @@ package main
 import (
 	"context"
 	"fmt"
-	"ggdrive/utils" //Consider changing module name to github.com/discordtime/ggdrive
 	"os"
+
+	"github.com/DiscordTime/ggdrive/src/utils"
+	gdrive_repository "github.com/DiscordTime/ggdrive/src/repository"
+	gdrive_service "github.com/DiscordTime/ggdrive/src/service"
 )
 
 func main() {
 
     logger := utils.DefaultLogger{}
 
-
-
     for i := 0; i < len(os.Args); i++ {
-	logger.LogD(os.Args[i])
+        logger.LogD(os.Args[i])
     }
 
 
     ctx := context.Background()
-    gSvc := NewGdriveService(ctx, logger)
+    gSvc := gdrive_service.New(ctx, logger)
 
     if (gSvc == nil) {
 	fmt.Println("Exiting")
 	return
     }
-    driveRepo := NewDriveRepository(gSvc, logger)
+    driveRepo := gdrive_repository.New(gSvc, logger)
 
     logger.LogD("Main", "Starting...")
     driveRepo.ListFiles(ctx)
