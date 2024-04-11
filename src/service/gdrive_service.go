@@ -1,4 +1,4 @@
-package gdrive_service
+package service
 
 import (
 	"context"

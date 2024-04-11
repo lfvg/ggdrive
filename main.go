@@ -5,26 +5,27 @@ import (
 	"fmt"
 	"os"
 
-	gdrive_repository "github.com/DiscordTime/ggdrive/src/repository"
-	gdrive_service "github.com/DiscordTime/ggdrive/src/service"
+	"github.com/DiscordTime/ggdrive/src/repository"
+	"github.com/DiscordTime/ggdrive/src/service"
 	"github.com/DiscordTime/ggdrive/src/utils"
 	"github.com/viniciusalbuquerque/gli/src/gli"
 )
 
 var logger utils.Logger
 
-func initRepo() (gdrive_repository.DriveRepository, error) {
+func initRepo() (repository.DriveRepository, error) {
     logger.LogD("initRepo", "Starting...")
 
     ctx := context.Background()
-    gSvc := gdrive_service.New(ctx, logger)
+    gSvc := service.New(ctx, logger)
+
 
     if (gSvc == nil) {
 	fmt.Println("Exiting")
 	return nil, fmt.Errorf("Could not start service")
     }
 
-    driveRepo := gdrive_repository.New(gSvc, logger)
+    driveRepo := repository.New(gSvc, logger)
 
     return driveRepo, nil
 

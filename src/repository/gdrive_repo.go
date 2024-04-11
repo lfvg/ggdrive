@@ -1,10 +1,10 @@
-package gdrive_repository
+package repository
 
 import (
 	"fmt"
 
+	"github.com/DiscordTime/ggdrive/src/service"
 	"github.com/DiscordTime/ggdrive/src/utils"
-	gdrive_service "github.com/DiscordTime/ggdrive/src/service"
 )
 
 type DriveRepository interface {
@@ -14,11 +14,11 @@ type DriveRepository interface {
 }
 
 type GDriveRepository struct {
-    srv gdrive_service.GSvc
+    srv service.GSvc
     logger utils.Logger
 }
 
-func New(gSrv gdrive_service.GSvc, logger utils.Logger) DriveRepository {
+func New(gSrv service.GSvc, logger utils.Logger) DriveRepository {
     return GDriveRepository{
         srv: gSrv,
         logger: logger,
