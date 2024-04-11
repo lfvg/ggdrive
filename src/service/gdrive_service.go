@@ -19,8 +19,8 @@ import (
 type GSvc interface {
     GetFileName(string) (string, error)
     ListFiles(int) (*drive.FileList, error)
-    DownloadFile(context.Context, string) (*drive.File, error)
-    UploadFile(context.Context, string) error
+    DownloadFile(string) error
+    UploadFile(string) error
 }
 
 type GdriveService struct {
@@ -28,9 +28,12 @@ type GdriveService struct {
     srv *drive.Service
 }
 
-func New(ctx context.Context, logger utils.Logger) *GdriveService {
-    // Not ideal, but it's fine for now
-    srv, err := authenticate(ctx)
+var ctx context.Context
+
+func New(_ctx context.Context, logger utils.Logger) *GdriveService {
+    srv, err := authenticate(_ctx)
+    ctx = _ctx
+
     if (err != nil) {
         return nil
     }
@@ -41,19 +44,7 @@ func New(ctx context.Context, logger utils.Logger) *GdriveService {
     }
 }
 
-func getFileMetaData(srv *drive.Service, id string) (*drive.File, error) {
-    fmt.Println("getFileMetaData called")
-
-    file,err := srv.Files.Get(id).Fields("id", "name", "size").Do()
-    if err != nil {
-        fmt.Printf("Could not get file metadata for id %s\n", id)
-        return nil, err
-    }
-    fmt.Println("filename:", file.Name)
-    return file, nil
-}
-
-func (g GdriveService) DownloadFile(ctx context.Context, fileId string) error {
+func (g GdriveService) DownloadFile(fileId string) error {
     filename,err := g.GetFileName(fileId)
     if err != nil {
         return err
@@ -83,7 +74,7 @@ func (g GdriveService) GetFileName(id string) (string, error) {
     return file.Name, nil
 }
 
-func (g GdriveService) UploadFile(ctx context.Context, filename string) error {
+func (g GdriveService) UploadFile(filename string) error {
     contentType, err := utils.GetMimeType(filename)
     if err != nil {
         g.logger.LogD("GDriveRepository", "Could not get mimetype of file: ", filename)
@@ -118,6 +109,18 @@ func (g GdriveService) UploadFile(ctx context.Context, filename string) error {
     }
     fmt.Printf("Uploaded file: %s, id: %s\n", res.Name, res.Id)
     return nil
+}
+
+func getFileMetaData(srv *drive.Service, id string) (*drive.File, error) {
+    fmt.Println("getFileMetaData called")
+
+    file,err := srv.Files.Get(id).Fields("id", "name", "size").Do()
+    if err != nil {
+        fmt.Printf("Could not get file metadata for id %s\n", id)
+        return nil, err
+    }
+    fmt.Println("filename:", file.Name)
+    return file, nil
 }
 
 func authenticate(ctx context.Context) (*drive.Service, error) {

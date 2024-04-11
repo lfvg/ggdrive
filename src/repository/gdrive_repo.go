@@ -1,7 +1,6 @@
 package gdrive_repository
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/DiscordTime/ggdrive/src/utils"
@@ -9,24 +8,24 @@ import (
 )
 
 type DriveRepository interface {
-    ListFiles(context.Context) error
-    DownloadFile(context.Context, string) error
-    UploadFile(context.Context, string) error
+    ListFiles() error
+    DownloadFile(string) error
+    UploadFile(string) error
 }
 
 type GDriveRepository struct {
-    srv *gdrive_service.GdriveService
+    srv gdrive_service.GSvc
     logger utils.Logger
 }
 
-func New(gSrv *gdrive_service.GdriveService, logger utils.Logger) DriveRepository {
+func New(gSrv gdrive_service.GSvc, logger utils.Logger) DriveRepository {
     return GDriveRepository{
         srv: gSrv,
         logger: logger,
     }
 }
 
-func (drv GDriveRepository) ListFiles(ctx context.Context) error {
+func (drv GDriveRepository) ListFiles() error {
     drv.logger.LogD("GDriveRepository", "List files called")
     r, err := drv.srv.ListFiles(10)
     if err != nil {
@@ -44,14 +43,14 @@ func (drv GDriveRepository) ListFiles(ctx context.Context) error {
     return nil
 }
 
-func (drv GDriveRepository) DownloadFile(ctx context.Context, fileId string) error {
+func (drv GDriveRepository) DownloadFile(fileId string) error {
     drv.logger.LogD("GDriveRepository", "DownloadFile called")
-    return drv.srv.DownloadFile(ctx, fileId)
+    return drv.srv.DownloadFile(fileId)
 }
 
-func (drv GDriveRepository) UploadFile(ctx context.Context, filename string) error {
+func (drv GDriveRepository) UploadFile(filename string) error {
     drv.logger.LogD("GDriveRepository", "UploadFile called")
-    return drv.UploadFile(ctx, filename)
+    return drv.UploadFile(filename)
 
 }
 

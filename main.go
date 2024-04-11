@@ -29,7 +29,7 @@ func main() {
     driveRepo := gdrive_repository.New(gSvc, logger)
 
     logger.LogD("Main", "Starting...")
-    driveRepo.ListFiles(ctx)
+    driveRepo.ListFiles()
     //driveRepo.UploadFile(ctx, "test.txt")
     //fmt.Println("Starting...")
     //err := DownloadFile(ctx, "1C71utWp3sOCx5yj-aLsXF3RR0dCaJ7ne")
