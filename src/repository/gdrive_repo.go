@@ -33,9 +33,8 @@ func (drv GDriveRepository) ListFiles() error {
         return err
     }
     if len(r.Files) == 0 {
-        fmt.Println("No files found.")
+        drv.logger.LogD("No files found.")
     } else {
-        fmt.Println("Files:")
         for _, i := range r.Files {
             fmt.Printf("%s (%s)\n", i.Name, i.Id)
         }
@@ -50,7 +49,7 @@ func (drv GDriveRepository) DownloadFile(fileId string) error {
 
 func (drv GDriveRepository) UploadFile(filename string) error {
     drv.logger.LogD("GDriveRepository", "UploadFile called")
-    return drv.UploadFile(filename)
+    return drv.srv.UploadFile(filename)
 
 }
 

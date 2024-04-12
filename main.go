@@ -50,26 +50,26 @@ func downloadFile(params []string) error {
 	return err
     }
 
-    if len(params) < 3 {
+    if len(params) < 1 {
 	return fmt.Errorf("Please inform id of the file to be downloaded")
     }
 
-    return driveRepo.DownloadFile(params[3])
+    return driveRepo.DownloadFile(params[0])
 }
 
 func uploadFile(params []string) error {
     driveRepo, err := initRepo()
-    logger.LogD("uploadFile", "Starting...")
+    logger.LogD("uploadFile", "Starting...", params)
 
     if err != nil {
 	return err
     }
 
-    if len(params) < 3 {
+    if len(params) < 1 {
 	return fmt.Errorf("Please select file to upload")
     }
 
-    return driveRepo.UploadFile(params[3])
+    return driveRepo.UploadFile(params[0])
 }
 
 func main() {

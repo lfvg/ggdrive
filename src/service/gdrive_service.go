@@ -30,15 +30,15 @@ type GdriveService struct {
 
 var ctx context.Context
 
-func New(_ctx context.Context, logger utils.Logger) *GdriveService {
-    srv, err := authenticate(_ctx)
+func New(_ctx context.Context, logger utils.Logger) GSvc {
+    srv, err := authenticate(_ctx, logger)
     ctx = _ctx
 
     if (err != nil) {
         return nil
     }
     
-    return &GdriveService {
+    return GdriveService {
         logger: logger,
         srv: srv,
     }
@@ -50,10 +50,9 @@ func (g GdriveService) DownloadFile(fileId string) error {
         return err
     }
 
-    fmt.Println("Downloading file:", filename)
+    g.logger.LogD("Downloading file:", filename)
 
     res, err := g.srv.Files.Get(fileId).Context(ctx).Download()
-    fmt.Println(res)
     if err != nil {
         return err
     }
@@ -66,9 +65,9 @@ func (g GdriveService) ListFiles(pageSize int) (*drive.FileList, error) {
 }
 
 func (g GdriveService) GetFileName(id string) (string, error) {
-    file,err := getFileMetaData(g.srv, id)
+    file,err := getFileMetaData(g.srv, id, g.logger)
     if err != nil {
-        fmt.Println("Could not get filename.", err)
+        g.logger.LogD("Could not get filename.", err)
         return "",err
     }
     return file.Name, nil
@@ -95,7 +94,7 @@ func (g GdriveService) UploadFile(filename string) error {
  
     f := &drive.File{Name: filename, MimeType: contentType}
     progressFunction := func(now, size int64) {
-        fmt.Printf("%d, %d\r", now, size)
+        g.logger.LogD("%d, %d\r", now, size)
     }
 
     res, err := g.srv.Files.Create(f).
@@ -104,26 +103,26 @@ func (g GdriveService) UploadFile(filename string) error {
         Do()
 
     if err != nil {
-        fmt.Println("Couldn't upload file")
+        g.logger.LogD("Couldn't upload file")
         return err
     }
-    fmt.Printf("Uploaded file: %s, id: %s\n", res.Name, res.Id)
+    g.logger.LogD("Uploaded file: %s, id: %s\n", res.Name, res.Id)
     return nil
 }
 
-func getFileMetaData(srv *drive.Service, id string) (*drive.File, error) {
-    fmt.Println("getFileMetaData called")
+func getFileMetaData(srv *drive.Service, id string, logger utils.Logger) (*drive.File, error) {
+    logger.LogD("getFileMetaData called")
 
     file,err := srv.Files.Get(id).Fields("id", "name", "size").Do()
     if err != nil {
-        fmt.Printf("Could not get file metadata for id %s\n", id)
+        logger.LogD("Could not get file metadata for id %s\n", id)
         return nil, err
     }
-    fmt.Println("filename:", file.Name)
+    logger.LogD("filename:", file.Name)
     return file, nil
 }
 
-func authenticate(ctx context.Context) (*drive.Service, error) {
+func authenticate(ctx context.Context, logger utils.Logger) (*drive.Service, error) {
     b, err := ioutil.ReadFile("credentials.json")
     if err != nil {
         return nil, err
@@ -131,14 +130,13 @@ func authenticate(ctx context.Context) (*drive.Service, error) {
 
     config, err := google.ConfigFromJSON(b, drive.DriveFileScope)
     if err != nil {
-        //fmt.Println("Unable to parse client secret file to config: ", err)
+        logger.LogD("Unable to parse client secret file to config: ", err)
         return nil, err
     }
     client := getClient(ctx, config)
     srv,err := drive.NewService(ctx, option.WithHTTPClient(client)) 
     if err != nil {
         return nil, err
-        //fmt.Println("Error while authenticating")
     }
 
     return srv, nil
