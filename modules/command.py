@@ -1,3 +1,4 @@
+import asyncio
 from argparse import ArgumentParser
 
 from modules import extractor, logger, config
@@ -179,7 +180,6 @@ class Download(Command):
             print('\x1b[2K', end='\r')
             logger.d(f'An error happened while running operation {title}')
             logger.d(e)
-            # traceback.print_exc()
             raise
 
 
@@ -212,7 +212,7 @@ class Upload(Command):
         )
 
     async def execute(self):
-        self.upload()
+        await self.upload()
 
     def get_filepath(self):
         files = self.args.file
@@ -222,37 +222,72 @@ class Upload(Command):
         else:
             return files[0]
 
+
     @staticmethod
-    def _conclude_operation_while_logging(task, title):
+    async def _conclude_operation_while_logging(task, title): # 'task' should be the Google API request object for upload
+        loop = asyncio.get_event_loop()
         try:
             with ProgressLogger(title) as progress_logger:
                 result = None
                 while not result:
-                    status, result = task.next_chunk()
+                    # Run the blocking task.next_chunk() in an executor
+                    if hasattr(asyncio, 'to_thread'): # For Python 3.9+
+                        status, result = await asyncio.to_thread(task.next_chunk)
+                    else: # For Python versions older than 3.9
+                        status, result = await loop.run_in_executor(None, task.next_chunk)
+
                     if status:
-                        progress = Progress(status.resumable_progress, status.total_size)
-                        progress_logger.send(progress)
+                        current_bytes = getattr(status, 'resumable_progress', None)
+                        total_bytes = getattr(status, 'total_size', None)
+
+                        if current_bytes is not None and total_bytes is not None and total_bytes > 0:
+                            progress = Progress(current_bytes, total_bytes)
+                            await progress_logger.send(progress)
+                            logger.d(f"Upload Progress: Sent {progress} to ProgressLogger") # Optional debug
+                        else:
+                            # Log if progress data is incomplete, but continue
+                            logger.d(f"Upload status received but data incomplete or total_size is 0. Status: {status}, resumable_progress: {current_bytes}, total_size: {total_bytes}")
+
+                    if result: # Upload complete, result contains the server response
+                        logger.d(f"Upload finished. Result: {result}")
+                        break
+
+                    # If the upload is not complete, we can wait a bit before checking again
+                    await asyncio.sleep(0.1)
+
                 return result
         except BaseException as err:
             print('\x1b[2K', end='\r')
             print(f'An error happened while running operation {title}')
-            logger.d(err)
+            logger.d(f"Error in _conclude_operation_while_logging: {err}")
+            raise
 
-    def upload(self):
+    async def upload(self):
         try:
             filepath = self.get_filepath()
             mimetype = guess_mimetype(filepath)
-            upload_task = self.google.upload(filepath, mimetype)
-            print("Uploading 0%", end='\r')
-            response = self._conclude_operation_while_logging(upload_task, "Uploading")
-            if not response:
-                return
-            print("Upload finished.")
-            print('File ID: %s\n' % response.get('id'))
-        except BaseException as err:
-            print('An error occurred while uploading the file.')
-            logger.d(err)
 
+            upload_task_request = self.google.upload(filepath, mimetype)
+
+            print("Uploading... (progress will follow)", end='\r') # Initial message
+            response = await self._conclude_operation_while_logging(upload_task_request, "Uploading")
+
+            print('\x1b[2K', end='\r')
+
+            if not response:
+                print("Upload failed or did not return a response.")
+                return
+
+            print("Upload finished.")
+            print(f"File ID: {response.get('id')}\n")
+
+        except FileNotFoundError:
+            print(f"Error: File not found at {filepath}")
+            logger.d(f"Upload error: File not found at {filepath}")
+        except Exception as err: 
+            print('\x1b[2K', end='\r')
+            print('An error occurred while uploading the file.')
+            logger.d(f"Upload error: {err}")
 
 class List(Command):
     TYPE = "list"
